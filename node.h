@@ -20,7 +20,7 @@ private:
 	// decay_rate_fixed: this fixed value is subtracted from current_chg (before decay_rate_pcnt)
 	// edges: stores all of the outgoing edges connected to the current Node
 	//static int counter;
-	int id, num_edges;
+	unsigned int id, num_edges;
 	double current_chg, stored_chg, threshold;
 	double chg_cons_pcnt, chg_cons_fixed;
 	double decay_rate_pcnt, decay_rate_fixed;
@@ -28,7 +28,7 @@ private:
 	std::vector<std::tuple<double, double, Node*>> edges; // tuple(double out_pcnt, double out_fixed, Node* node)
 public:
 	Node();
-	Node(int id, double T, double Cp, double Cf, double Dp, double Df);
+	Node(unsigned int id, double T, double Cp, double Cf, double Dp, double Df);
 	~Node();
 	bool operator==(Node& other);
 	double pulse(double outgoing_signal);
@@ -45,8 +45,8 @@ public:
 	void set_edge(double out_pcnt, double out_fixed, int edge);
 	void set_node(double T, double Cp, double Cf, double Dp, double Df);
 	std::vector<std::tuple<double, double, int>> get_edges();
-	int get_num_edges(void);
-	int get_id(void);
+	unsigned int get_num_edges(void);
+	unsigned int get_id(void);
 	double get_current_chg(void);
 	double get_stored_chg(void);
 	double get_threshold(void);

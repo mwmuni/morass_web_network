@@ -36,7 +36,7 @@ int GeneticAlgorithm::size(void) {
 
 void GeneticAlgorithm::generate_webs(int webs_to_make, int max_nodes, bool fully_connected) {
 	//inputs.clear();
-	for (int i = 0; i < webs.size(); i++) {
+	for (int i = webs.size()-1; i >= 0; i--) {
 		delete webs[i];
 	}
 	webs.clear();
@@ -73,8 +73,8 @@ void GeneticAlgorithm::generate_webs(int webs_to_make, int max_nodes, bool fully
 			}
 		}
 		else {
-			for (int j = 0; j < mn->length() - 1; j++) {
-				for (int k = j + 1; k < mn->length(); k++) {
+			for (unsigned int j = 0; j < mn->length() - 1; j++) {
+				for (unsigned int k = j + 1; k < mn->length(); k++) {
 					out_pcnt = dis(gen);
 					out_fixed = dis(gen) * max_threshold;
 					mn->add_edge(out_pcnt, out_fixed, j, k);
@@ -142,7 +142,7 @@ bool GeneticAlgorithm::del_random_edge(MorassNetwork* web, int max_attempts) {
 	return success;
 }
 
-void GeneticAlgorithm::add_random_node_with_edges(MorassNetwork* web, int inc_edges, int out_edges) {
+void GeneticAlgorithm::add_random_node_with_edges(MorassNetwork* web, unsigned int inc_edges, unsigned int out_edges) {
 	if (web->length() == 0) {
 		std::cout << "WARNING! Can't add a node with edges to an empty web." << std::endl;
 		return;
@@ -167,14 +167,14 @@ void GeneticAlgorithm::add_random_node_with_edges(MorassNetwork* web, int inc_ed
 	//The following two for loops will keep attempting to insert edges until success
 	//Guaranteed to eventually work; will not take too long since rand() evenly distributes values
 	if (inc_edges == web->length()-1) {
-		for (int i = 0; i < inc_edges; i++) {
+		for (unsigned int i = 0; i < inc_edges; i++) {
 			out_pcnt = dis(gen);
 			out_fixed = dis(gen) * max_threshold;
 			web->add_edge(out_pcnt, out_fixed, node_id, i);
 		}
 	}
 	else {
-		for (int i = 0; i < inc_edges; i++) {
+		for (unsigned int i = 0; i < inc_edges; i++) {
 			do {
 				out_pcnt = dis(gen);
 				out_fixed = dis(gen) * max_threshold;
@@ -183,14 +183,14 @@ void GeneticAlgorithm::add_random_node_with_edges(MorassNetwork* web, int inc_ed
 		}
 	}
 	if (out_edges == web->length()-1) {
-		for (int i = 0; i < out_edges; i++) {
+		for (unsigned int i = 0; i < out_edges; i++) {
 			out_pcnt = dis(gen);
 			out_fixed = dis(gen) * max_threshold;
 			web->add_edge(out_pcnt, out_fixed, node_id, i);
 		}
 	}
 	else {
-		for (int i = 0; i < out_edges; i++) {
+		for (unsigned int i = 0; i < out_edges; i++) {
 			do {
 				out_pcnt = dis(gen);
 				out_fixed = dis(gen) * max_threshold;
@@ -234,8 +234,10 @@ void GeneticAlgorithm::mutate_web(MorassNetwork* web) {
 		//int range = 4 + (1 ? web->length() > 10 : 0);
 		//int rand_val = rand() % (range - 1);
 		//int rand_val = rand() % 5;
-		int rand_val = rand() % 2 + 3;
-		//std::cout << rand_val << std::endl;
+		std::uniform_real_distribution<> dis(0.0, 0.9999);
+		int rand_val = 2 + (int)(dis(gen) * 3);
+		//int rand_val = rand() % 2 + 3;
+		//std::cout << rand_val;
 
 		switch (rand_val) {
 		case 0: // Add random edge
@@ -272,9 +274,8 @@ MorassNetwork* GeneticAlgorithm::merge_webs(MorassNetwork* web_a, MorassNetwork*
 	std::vector<MorassNetwork*> temp_webs;
 	temp_webs.push_back(web_a);
 
-	int max_nodes = std::max(web_a->length(), web_b->length());
-	int min_nodes = std::min(web_a->length(), web_b->length());
-	Node* temp_node_ptr;
+	unsigned int max_nodes = std::max(web_a->length(), web_b->length());
+	unsigned int min_nodes = std::min(web_a->length(), web_b->length());
 	std::vector<std::tuple<double, double, int>> edges;
 	MorassNetwork* greater_web;
 	if (max_nodes == web_a->length())
@@ -282,7 +283,8 @@ MorassNetwork* GeneticAlgorithm::merge_webs(MorassNetwork* web_a, MorassNetwork*
 	else
 		greater_web = web_b;
 	// This for loop randomly chooses a web to draw a node from; the node's parameters are copied
-	for (int i = 0; i < max_nodes; i++) {
+	for (unsigned int i = 0; i < max_nodes; i++) {
+		Node* temp_node_ptr;
 		if (i < min_nodes) {
 			if (dis(gen) < parent_ratio) {
 				temp_node_ptr = web_a->get_node(i);
@@ -300,7 +302,8 @@ MorassNetwork* GeneticAlgorithm::merge_webs(MorassNetwork* web_a, MorassNetwork*
 			temp_node_ptr->get_decay_rate_pcnt(),
 			temp_node_ptr->get_decay_rate_fixed());
 	}
-	for (int i = 0; i < max_nodes; i++) {
+	#pragma omp parallel for
+	for (unsigned int i = 0; i < max_nodes; i++) {
 		if (i < min_nodes) {
 			if (dis(gen) < parent_ratio) {
 				edges = web_a->get_node(i)->get_edges();
@@ -322,7 +325,7 @@ MorassNetwork* GeneticAlgorithm::deep_copy(MorassNetwork* web) {
 	MorassNetwork* new_web = new MorassNetwork();
 	Node* curr_node;
 	std::vector<std::tuple<double, double, int>> node_edges;
-	for (int i = 0; i < web->length(); i++) {
+	for (unsigned int i = 0; i < web->length(); i++) {
 		curr_node = web->get_node(i);
 		new_web->add_node(curr_node->get_threshold(),
 			curr_node->get_chg_cons_pcnt(),
@@ -330,7 +333,7 @@ MorassNetwork* GeneticAlgorithm::deep_copy(MorassNetwork* web) {
 			curr_node->get_decay_rate_pcnt(),
 			curr_node->get_decay_rate_fixed());
 	}
-	for (int i = 0; i < web->length(); i++) {
+	for (unsigned int i = 0; i < web->length(); i++) {
 		node_edges = web->get_node(i)->get_edges();
 		for (unsigned int j = 0; j < node_edges.size(); j++) {
 			new_web->add_edge(std::get<0>(node_edges[j]), std::get<1>(node_edges[j]), i, std::get<2>(node_edges[j]));
@@ -339,21 +342,22 @@ MorassNetwork* GeneticAlgorithm::deep_copy(MorassNetwork* web) {
 	return new_web;
 }
 
-MorassNetwork* GeneticAlgorithm::evolve_for_pi(int webs_to_make) {
+MorassNetwork* GeneticAlgorithm::evolve_for_pi(unsigned int webs_to_make) {
 	//std::random_device rd;  //Will be used to obtain a seed for the random number engine
 	//std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
 	std::uniform_real_distribution<> dis(-1.0, 1.0);
-	generate_webs(webs_to_make, 16, true);
+	generate_webs(webs_to_make, 16, true);	// (num_webs, num_nodes, is_fully_connected)
 	int top_to_keep = std::max(20, (int)std::sqrt(webs_to_make)); // WARNING: do not make this number too large
 	unsigned int num_epochs = 100000;
-	unsigned int num_steps = 30;
-	unsigned int max_mutations = 200;
+	unsigned int num_steps = 100;
+	unsigned int max_mutations = 30;
 	unsigned int num_outputs = 10;
-	int best_web;
-	double best_score;
+	unsigned int output_decimator = 0;
+	int best_web = -1;
+	double best_score = -1;
 	unsigned int best_nodes;
 	unsigned int best_edges;
-	std::vector<std::tuple<double, int>> pulses; // Order will be determined by strength of pulse, second element is pulse index
+	//std::vector<std::tuple<double, int>> pulses; // Order will be determined by strength of pulse, second element is pulse index
 	std::vector<std::tuple<int, int>> scores; // Score is first element since it makes sorting easier, second element is web index
 	std::vector<std::string> outputs;
 	std::vector<MorassNetwork*> best_webs;
@@ -375,37 +379,36 @@ MorassNetwork* GeneticAlgorithm::evolve_for_pi(int webs_to_make) {
 		}
 		// This is the main part of the loop that steps through all the webs and processes the pulses
 		
-		bool multi_output;
-		bool multi_output_allowed = true;
+		bool multi_output_allowed = false;
 		//TODO convert the k outer loop into a multithreaded function call
-		#pragma omp parallel num_threads(8)
-		{
-			#pragma omp for
-			for (unsigned int k = 0; k < webs.size(); k++) {
-				for (unsigned int j = 0; j < num_steps; j++) {
-					pulses = webs[k]->step();
-					pulses = std::vector<std::tuple<double, int>>(pulses.begin(), pulses.begin() + num_outputs);
-					std::sort(pulses.begin(), pulses.end());
-					if (!multi_output_allowed) {
-						multi_output = false;
-						for (int p = num_outputs - 2; p >= 0; p--) {
-							if (std::get<0>(pulses[p]) > 0.0) {
-								multi_output = true;
-							}
-							else
-								break;
+
+		#pragma omp parallel for critical outputs
+		for (unsigned int k = 0; k < webs.size(); k++) {
+			std::vector<std::tuple<double, int>> pulses;
+			for (unsigned int j = 0; j < num_steps; j++) {
+				bool multi_output;
+				pulses = webs[k]->step();
+				pulses = std::vector<std::tuple<double, int>>(pulses.begin(), pulses.begin() + num_outputs);
+				std::sort(pulses.begin(), pulses.end());
+				if (!multi_output_allowed) {
+					multi_output = false;
+					for (int p = num_outputs - 2; p >= 0; p--) {
+						if (std::get<0>(pulses[p]) > 0.0) {
+							multi_output = true;
 						}
-						if (!multi_output)
-							outputs[k] += std::to_string(std::get<1>(pulses[num_outputs - 1]));
+						else
+							break;
 					}
-					else {
-						for (int p = num_outputs - 1; p >= 0; p--) {
-							if (std::get<0>(pulses[p]) > 0.0) {
-								//if (k >= 1000)
-									//std::cout << "k: " << k << std::endl;
-								//std::cout << "outputs[" << k << "]: " << outputs[k] << std::endl;
-								outputs[k] += std::to_string(std::get<1>(pulses[p]));
-							}
+					if (!multi_output)
+						outputs[k] += std::to_string(std::get<1>(pulses[num_outputs - 1]));
+				}
+				else {
+					for (int p = num_outputs - 1; p >= 0; p--) {
+						if (std::get<0>(pulses[p]) > 0.0) {
+							//if (k >= 1000)
+								//std::cout << "k: " << k << std::endl;
+							//std::cout << "outputs[" << k << "]: " << outputs[k] << std::endl;
+							outputs[k] += std::to_string(std::get<1>(pulses[p]));
 						}
 					}
 				}
@@ -416,17 +419,19 @@ MorassNetwork* GeneticAlgorithm::evolve_for_pi(int webs_to_make) {
 			for (unsigned int k = 0; k < outputs.size(); k++) {
 				if (j < outputs[k].size())
 					if (outputs[k][j] == pi[j]) {
-						std::get<0>(scores[k])+= std::max(200 / ((int)j+1), 50);
+						//std::cout << "Adding: " << std::max((200 - (signed)webs[std::get<1>(scores[k])]->length()) / ((int)j + 1), 50) << std::endl;
+						std::get<0>(scores[k])+= std::max((200 - (signed)webs[std::get<1>(scores[k])]->length()*5) / ((int)j+1), 50 - std::min(40, (signed)webs[std::get<1>(scores[k])]->length()));
 					}
 					else {
-						std::get<0>(scores[k]) -= (5 * std::abs(std::atoi(&outputs[k][j]) - std::atoi(&pi[j])));
+						//std::cout << "Removing: " << (int)(5. * (double)std::abs((outputs[k][j] - '0') - (pi[j] - '0'))) << std::endl;
+						std::get<0>(scores[k]) -= (int)(5. * (double)std::abs((outputs[k][j] - '0') - (pi[j] - '0')));
 					}
 			}
 		}
 		std::sort(scores.begin(), scores.end());
 		best_web = -1;
 		best_score = -1.0;
-		best_nodes = -1;
+		best_nodes = 0;
 		best_edges = 0;
 		for (unsigned int j = scores.size() - 1; j >= scores.size() - (double(top_to_keep) + 1); j--) {
 			best_webs.push_back(deep_copy(webs[std::get<1>(scores[j])]));
@@ -434,15 +439,17 @@ MorassNetwork* GeneticAlgorithm::evolve_for_pi(int webs_to_make) {
 				best_web = std::get<1>(scores[j]);
 				best_score = std::get<0>(scores[j]);
 				best_nodes = best_webs[0]->length();
-				for (int n = 0; n < best_nodes; n++) {
+				for (unsigned int n = 0; n < best_nodes; n++) {
 					Node* node_ptr = best_webs[0]->get_node(n);
 					best_edges += node_ptr->get_num_edges();
 				}
 			}
 		}
-		std::cout << "Best output so far was: " << outputs[best_web] << " score: " << best_score << ", nodes: " << best_nodes << ", edges: " << best_edges << std::endl;
 
-		for (int m = webs.size(); m >= 0; m--) {
+		if (output_decimator++ % 20 == 0)
+			std::cout << "Best output so far was: " << outputs[best_web] << " score: " << best_score << ", nodes: " << best_nodes << ", edges: " << best_edges << std::endl;
+
+		for (int m = webs.size()-1; m >= 0; m--) {
 			delete webs[m];
 		}
 		webs.clear();

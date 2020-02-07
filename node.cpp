@@ -3,14 +3,14 @@
 //int Node::counter = 0;
 
 Node::Node(void) {
-	id = -1;
+	id = NULL;
 	num_edges = 0;
 	current_chg = stored_chg = threshold = 
 		chg_cons_pcnt = chg_cons_fixed = 
 		decay_rate_pcnt = decay_rate_fixed = 0.0;
 }
 
-Node::Node(int id, double T, double Cp, double Cf, double Dp, double Df) {
+Node::Node(unsigned int id, double T, double Cp, double Cf, double Dp, double Df) {
 	this->id = id;
 	num_edges = 0;
 	current_chg = 0.0;
@@ -42,7 +42,7 @@ bool Node::add_edge(double out_pcnt, double out_fixed, Node * node) {
 }
 
 bool Node::del_edge(Node* to_del) {
-	for (int i = 0; i < edges.size(); i++) {
+	for (unsigned int i = 0; i < edges.size(); i++) {
 		if (std::get<2>(edges[i]) == to_del) {
 			edges.erase(edges.begin() + i);
 			num_edges--;
@@ -53,7 +53,7 @@ bool Node::del_edge(Node* to_del) {
 }
 
 bool Node::has_edge(Node* to_find) {
-	for (int i = 0; i < edges.size(); i++) {
+	for (unsigned int i = 0; i < edges.size(); i++) {
 		if (std::get<2>(edges[i]) == to_find) {
 			return true;
 		}
@@ -76,7 +76,7 @@ void Node::set_node(double T, double Cp, double Cf, double Dp, double Df) {
 
 std::vector<std::tuple<double, double, int>> Node::get_edges() {
 	std::vector<std::tuple<double, double, int>> int_edges;
-	for (int i = 0; i < edges.size(); i++) {
+	for (unsigned int i = 0; i < edges.size(); i++) {
 		int_edges.emplace_back(std::get<0>(edges[i]), std::get<1>(edges[i]), std::get<2>(edges[i])->get_id());
 	}
 	return int_edges;
@@ -90,11 +90,11 @@ void Node::print_edges(void) {
 	}
 }
 
-int Node::get_num_edges() {
+unsigned int Node::get_num_edges() {
 	return num_edges;
 }
 
-int Node::get_id(void) {
+unsigned int Node::get_id(void) {
 	return id;
 }
 

@@ -27,14 +27,14 @@ public:
 	int size(void);
 	bool add_random_edge(MorassNetwork* web, int start = -1, int end = -1, int max_attempts = 100);
 	bool del_random_edge(MorassNetwork* web, int max_attempts = 100);
-	void add_random_node_with_edges(MorassNetwork* web, int inc_edges = 1, int out_edges = 1);
+	void add_random_node_with_edges(MorassNetwork* web, unsigned int inc_edges = 1, unsigned int out_edges = 1);
 	bool del_random_node(MorassNetwork* web);
 	void randomise_edge(MorassNetwork* web);
 	void randomise_node(MorassNetwork* web); //Does not affect edges
 	void mutate_web(MorassNetwork* web);
 	MorassNetwork* merge_webs(MorassNetwork* web_a, MorassNetwork* web_b);
 	void generate_webs(int webs_to_make, int max_nodes, bool fully_connected = true);
-	MorassNetwork* evolve_for_pi(int webs_to_make);
+	MorassNetwork* evolve_for_pi(unsigned int webs_to_make);
 	MorassNetwork* deep_copy(MorassNetwork* web);
 };
 
