@@ -1,17 +1,17 @@
 #include "node.h"
 
-int Node::counter = 0;
+//int Node::counter = 0;
 
 Node::Node(void) {
-	id = counter++;
+	id = -1;
 	num_edges = 0;
 	current_chg = stored_chg = threshold = 
 		chg_cons_pcnt = chg_cons_fixed = 
 		decay_rate_pcnt = decay_rate_fixed = 0.0;
 }
 
-Node::Node(double T, double Cp, double Cf, double Dp, double Df) {
-	id = counter++;
+Node::Node(int id, double T, double Cp, double Cf, double Dp, double Df) {
+	this->id = id;
 	num_edges = 0;
 	current_chg = 0.0;
 	stored_chg = 0.0;
@@ -30,21 +30,56 @@ bool Node::operator==(Node& other) {
 	return this->get_id() == other.get_id();
 }
 
-int Node::add_edge(double out_pcnt, double out_fixed, Node * node) {
+bool Node::add_edge(double out_pcnt, double out_fixed, Node * node) {
 	// Appends a tuple to the end of the edges list and returns the number of edges
 	for (std::vector<std::tuple<double, double, Node*>>::const_iterator n = edges.begin(); n != edges.end(); ++n) {
 		if (std::get<2>(*n) == node)
-			return -1;
+			return false;
 	}
 	edges.emplace_back(out_pcnt, out_fixed, node);
-	return ++num_edges;
+	++num_edges;
+	return true;
 }
 
-void Node::del_edge(Node* to_del) {
+bool Node::del_edge(Node* to_del) {
 	for (int i = 0; i < edges.size(); i++) {
-		if (std::get<2>(edges[i]) == to_del)
+		if (std::get<2>(edges[i]) == to_del) {
 			edges.erase(edges.begin() + i);
+			num_edges--;
+			return true;
+		}
 	}
+	return false;
+}
+
+bool Node::has_edge(Node* to_find) {
+	for (int i = 0; i < edges.size(); i++) {
+		if (std::get<2>(edges[i]) == to_find) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void Node::set_edge(double out_pcnt, double out_fixed, int edge) {
+	std::get<0>(edges[edge]) = out_pcnt;
+	std::get<1>(edges[edge]) = out_fixed;
+}
+
+void Node::set_node(double T, double Cp, double Cf, double Dp, double Df) {
+	this->threshold = T;
+	this->chg_cons_pcnt = Cp;
+	this->chg_cons_fixed = Cf;
+	this->decay_rate_pcnt = Dp;
+	this->decay_rate_fixed = Df;
+}
+
+std::vector<std::tuple<double, double, int>> Node::get_edges() {
+	std::vector<std::tuple<double, double, int>> int_edges;
+	for (int i = 0; i < edges.size(); i++) {
+		int_edges.emplace_back(std::get<0>(edges[i]), std::get<1>(edges[i]), std::get<2>(edges[i])->get_id());
+	}
+	return int_edges;
 }
 
 void Node::print_edges(void) {
@@ -67,8 +102,36 @@ void Node::set_id(int new_id) {
 	id = new_id;
 }
 
-void Node::set_counter(int new_counter) {
+/*void Node::set_counter(int new_counter) {
 	counter = new_counter;
+}*/
+
+double Node::get_current_chg(void) {
+	return current_chg;
+}
+
+double Node::get_stored_chg(void) {
+	return stored_chg;
+}
+
+double Node::get_threshold(void) {
+	return threshold;
+}
+
+double Node::get_chg_cons_pcnt(void) {
+	return chg_cons_pcnt;
+}
+
+double Node::get_chg_cons_fixed(void) {
+	return chg_cons_fixed;
+}
+
+double Node::get_decay_rate_pcnt(void) {
+	return decay_rate_pcnt;
+}
+
+double Node::get_decay_rate_fixed(void) {
+	return decay_rate_fixed;
 }
 
 double Node::pulse(double outgoing_signal) {
@@ -132,4 +195,9 @@ void Node::assimilate_charge(void) {
 
 void Node::inject_charge(double charge) {
 	current_chg += charge;
+}
+
+void Node::reset_charge() {
+	current_chg = 0;
+	stored_chg = 0;
 }

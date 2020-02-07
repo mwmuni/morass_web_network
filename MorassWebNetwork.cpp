@@ -3,16 +3,20 @@
 
 #include <iostream>
 using namespace std;
+#include "geneticalgorithm.h"
 #include "morassnetwork.h"
 
 int main()
 {
-    MorassNetwork* mn = new MorassNetwork();
-    std::vector<double> pulses;
-    /*mn->add_node(5., .2, .5, .05, .1);
+    GeneticAlgorithm* ga = new GeneticAlgorithm(0, 10, .5);
+    //MorassNetwork* mn = ga->evolve_for_pi(10);
+    ga->evolve_for_pi(1000);
+    //MorassNetwork* mn = new MorassNetwork();
+    /*std::vector<std::tuple<double, int>> pulses;
+    mn->add_node(5., .2, .5, .05, .1);
     mn->add_node(10., .5, 2, .1, 0.);
     mn->add_edge(.8, 2, 1, 0);
-    mn->add_edge(.1, 1, 0, 1);*/
+    mn->add_edge(.1, 1, 0, 1);
     mn->add_node(3., .1, 1., .33, 0.);
     mn->add_node(6., 1. / 3., 0., .2, 0.5);
     mn->add_node(20., .2, 1.5, .1, 0.);
@@ -30,10 +34,10 @@ int main()
         mn->inject_node(0, 2.);
         pulses = mn->step();
         for (int i = 0; i < pulses.size(); i++) {
-            std::cout << "Node " << i << " pulsed " << pulses[i] << ", ";
+            std::cout << "Node " << i << " pulsed " << std::get<0>(pulses[i]) << ", ";
         }
         std::cout << std::endl;
-    }
+    }*/
     return 0;
 }
 

@@ -5,11 +5,20 @@ MorassNetwork::MorassNetwork(void) {
 }
 
 MorassNetwork::~MorassNetwork(void) {
-
+	for (int m = 0; m < nodes.size(); m++) {
+		delete nodes[m];
+	}
+	nodes.clear();
 }
 
-std::vector<double> MorassNetwork::step(void) {
-	std::vector<double> pulses = process_thresholds();
+void MorassNetwork::reset_charge() {
+	for (int i = 0; i < nodes.size(); i++) {
+		nodes[i]->reset_charge();
+	}
+}
+
+std::vector<std::tuple<double, int>> MorassNetwork::step(void) {
+	std::vector<std::tuple<double, int>> pulses = process_thresholds();
 	process_decay();
 	process_inputs();
 	return pulses;
@@ -24,28 +33,54 @@ int MorassNetwork::length() {
 }
 
 int MorassNetwork::add_node(double T, double Cp, double Cf, double Dp, double Df) {
-	nodes.push_back(new Node(T, Cp, Cf, Dp, Df));
+	nodes.push_back(new Node(nodes.size(), T, Cp, Cf, Dp, Df));
 	return length();
 }
 
-void MorassNetwork::del_node(int node_id) {
-	if (node_id < nodes.size())
+bool MorassNetwork::del_node(int node_id) {
+	if (node_id < nodes.size()) {
+		for (int i = 0; i < nodes.size(); i++)
+			nodes[i]->del_edge(nodes[node_id]);
+		delete nodes[node_id];
 		nodes.erase(nodes.begin() + node_id);
+	}
+	else return false;
 	for (int i = 0; i < nodes.size(); i++)
 		nodes[i]->set_id(i);
-	if (nodes.size() > 0)
-		nodes[0]->set_counter(nodes.size());
+	return true;
+	//if (nodes.size() > 0)
+	//	nodes[0]->set_counter(nodes.size());
 }
 
-int MorassNetwork::add_edge(double out_pcnt, double out_fixed, int start_node, int end_node) {
-	int return_val = nodes[start_node]->add_edge(out_pcnt, out_fixed, nodes[end_node]);
-	if (return_val == -1)
-		std::cout << "Edge already existed between Node " << start_node << " and Node " << end_node << std::endl;
-	return return_val;
+bool MorassNetwork::add_edge(double out_pcnt, double out_fixed, int start_node, int end_node) {
+	return nodes[start_node]->add_edge(out_pcnt, out_fixed, nodes[end_node]);
 }
 
-void MorassNetwork::del_edge(int start_node, int end_node) {
-	nodes[start_node]->del_edge(nodes[end_node]);
+bool MorassNetwork::del_edge(int start_node, int end_node) {
+	return nodes[start_node]->del_edge(nodes[end_node]);
+}
+
+std::vector<int> MorassNetwork::remove_stranded_nodes() {
+	std::vector<Node*> no_outputs;
+	std::vector<int> to_remove;
+	int curr_node_id;
+	bool stranded;
+	for (int i = 0; i < nodes.size(); i++) {
+		if (nodes[i]->get_num_edges() == 0) {
+			no_outputs.push_back(nodes[i]);
+		}
+	}
+	for (int i = 0; i < no_outputs.size(); i++) {
+		stranded = true;
+		curr_node_id = no_outputs[i]->get_id();
+		for (int j = 0; j < nodes.size() && stranded; j++)
+			if (curr_node_id != j) stranded = !nodes[j]->has_edge(no_outputs[i]);
+		if (stranded) to_remove.push_back(curr_node_id);
+	}
+	for (int i = to_remove.size()-1; i >= 0; i--) { //Delete in reverse order as the ids get updated after deletion
+		del_node(to_remove[i]);
+	}
+	return to_remove;
 }
 
 void MorassNetwork::print_network(void) {
@@ -54,14 +89,18 @@ void MorassNetwork::print_network(void) {
 	}
 }
 
-std::vector<double> MorassNetwork::process_thresholds(void) {
-	std::vector<double> pulses;
-	for (int i = 0; i < nodes.size(); i++) pulses.push_back(0.0);
+std::vector<std::tuple<double, int>> MorassNetwork::process_thresholds(void) {
+	std::vector<std::tuple<double, int>> pulses;
+	for (int i = 0; i < nodes.size(); i++) pulses.emplace_back(0.0, i);
 	for (int i = 0; i < nodes.size(); i++) {
 		if (nodes[i]->over_threshold())
-			pulses[i] = nodes[i]->pulse(nodes[i]->trigger());
+			std::get<0>(pulses[i]) = nodes[i]->pulse(nodes[i]->trigger());
 	}
 	return pulses;
+}
+
+Node* MorassNetwork::get_node(int node_id) {
+	return nodes[node_id];
 }
 
 void MorassNetwork::process_decay(void) {
