@@ -23,4 +23,4 @@ An edge is defined with the following parameters:
   - start_node: the start node of the directed edge
   - end_node: the end node of the directed edge
 
-![image](https://imgur.com/xgYXSEX)
+![image](https://i.imgur.com/xgYXSEX.png)
