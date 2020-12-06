@@ -23,4 +23,8 @@ An edge is defined with the following parameters:
   - start_node: the start node of the directed edge
   - end_node: the end node of the directed edge
 
+The following is an example of the network evolving to output pi:
+
 ![image](https://i.imgur.com/xgYXSEX.png)
+
+The method used is not very good, but some numbers resembling pi are coming out, so it is learning in some very trivial way.
