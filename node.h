@@ -3,6 +3,7 @@
 #include <vector>
 #include <utility> // std::pair
 #include <tuple>
+#include <cassert>
 //#include <bits/stdc++.h>
 
 class Node
@@ -25,13 +26,13 @@ private:
 	double chg_cons_pcnt, chg_cons_fixed;
 	double decay_rate_pcnt, decay_rate_fixed;
 	//List of edges connected to current vertex
-	std::vector<std::tuple<double, double, Node*>> edges; // tuple(double out_pcnt, double out_fixed, Node* node)
 public:
 	Node();
 	Node(unsigned int id, double T, double Cp, double Cf, double Dp, double Df);
 	~Node();
-	bool operator==(Node& other);
-	double pulse(double outgoing_signal);
+	std::vector<std::tuple<double, double, int>> edges; // tuple(double out_pcnt, double out_fixed, int node_idx)
+	bool operator==(Node other);
+	//double pulse(double outgoing_signal);
 	double trigger(void);
 	void decay(void);
 	bool over_threshold(void);
@@ -39,12 +40,14 @@ public:
 	void assimilate_charge(void);
 	void inject_charge(double charge);
 	void reset_charge();
-	bool add_edge(double out_pcnt, double out_fixed, Node* node);
-	bool del_edge(Node* to_del);
-	bool has_edge(Node* to_find);
+	void shift_id_down(int start_idx);
+	bool add_edge(double out_pcnt, double out_fixed, int node);
+	bool del_edge(Node to_del);
+	bool del_edge(int to_del);
+	bool has_edge(Node to_find);
+	bool has_edge(int to_find);
 	void set_edge(double out_pcnt, double out_fixed, int edge);
 	void set_node(double T, double Cp, double Cf, double Dp, double Df);
-	std::vector<std::tuple<double, double, int>> get_edges();
 	unsigned int get_num_edges(void);
 	unsigned int get_id(void);
 	double get_current_chg(void);

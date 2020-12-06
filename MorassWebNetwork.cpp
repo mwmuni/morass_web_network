@@ -11,6 +11,7 @@ int main()
     GeneticAlgorithm* ga = new GeneticAlgorithm(0, 10, .5);
     //MorassNetwork* mn = ga->evolve_for_pi(10);
     ga->evolve_for_pi(1000);
+    //ga->evolve_for_mnist(1000);
     //MorassNetwork* mn = new MorassNetwork();
     /*std::vector<std::tuple<double, int>> pulses;
     mn->add_node(5., .2, .5, .05, .1);
