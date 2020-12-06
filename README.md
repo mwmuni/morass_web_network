@@ -22,3 +22,5 @@ An edge is defined with the following parameters:
   - Of: Out fixed; when a threshold is triggered, Of is added to Op and sent to the end node
   - start_node: the start node of the directed edge
   - end_node: the end node of the directed edge
+
+![image](https://imgur.com/xgYXSEX)
