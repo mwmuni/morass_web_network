@@ -1,13 +1,15 @@
 #pragma once
 #include "morassnetwork.h"
 #include "node.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include "stdlib.h"
 #include "sstream"
 #include <random>
 #include <iostream>
 #include <fstream>
 #include <array>
-#include <omp.h>
 
 class GeneticAlgorithm
 {
@@ -38,8 +40,7 @@ public:
 	void mutate_web(MorassNetwork &web, bool allow_node_deletion);
 	MorassNetwork merge_webs(MorassNetwork web_a, MorassNetwork web_b);
 	void generate_webs(int webs_to_make, int max_nodes, bool fully_connected = true, bool clear_webs = true);
-	MorassNetwork evolve_for_pi(unsigned int webs_to_make);
+	MorassNetwork evolve_for_pi(unsigned int webs_to_make, unsigned int num_epochs = 100000);
 	//MorassNetwork evolve_for_mnist(unsigned int webs_to_make);
 	MorassNetwork deep_copy(MorassNetwork web);
 };
-

@@ -5,9 +5,6 @@ MorassNetwork::MorassNetwork(void) {
 }
 
 MorassNetwork::~MorassNetwork(void) {
-	for (unsigned int m = 0; m < nodes.size(); m++) {
-		nodes.erase(nodes.begin() + m);
-	}
 	nodes.clear();
 }
 
@@ -39,13 +36,11 @@ int MorassNetwork::add_node(double T, double Cp, double Cf, double Dp, double Df
 }
 
 bool MorassNetwork::del_node(int node) {
-	if (node < (signed)nodes.size()) {
-		//Node node_to_del;
-		#pragma omp parallel for schedule(dynamic)
-		for (int i = 0; i < nodes.size(); i++) {
+	if (node >= 0 && static_cast<size_t>(node) < nodes.size()) {
+		for (size_t i = 0; i < nodes.size(); i++) {
 			nodes[i].del_edge(node);
 			nodes[i].shift_id_down(node);
-			if (nodes[i].get_id() > node)
+			if (nodes[i].get_id() > static_cast<unsigned int>(node))
 				nodes[i].set_id(nodes[i].get_id() - 1);
 		}
 		nodes.erase(nodes.begin() + node);
@@ -96,15 +91,15 @@ std::vector<int> MorassNetwork::remove_stranded_nodes() {
 }
 
 bool MorassNetwork::is_fully_connected(void) {
-	for (int i = 0; i < nodes.size(); i++) {
-		if (nodes[i].edges.size() == nodes.size() - 1)
+	for (size_t i = 0; i < nodes.size(); i++) {
+		if (nodes[i].edges.size() != nodes.size() - 1)
 			return false;
 	}
 	return true;
 }
 
 bool MorassNetwork::has_any_edges(void) {
-	for (int i = 0; i < nodes.size(); i++) {
+	for (size_t i = 0; i < nodes.size(); i++) {
 		if (nodes[i].edges.size() > 0)
 			return true;
 	}
@@ -123,14 +118,15 @@ std::vector<std::tuple<double, int>> MorassNetwork::process_thresholds(void) {
 	for (unsigned int i = 0; i < nodes.size(); i++) {
 		if (nodes[i].over_threshold())
 			std::get<0>(pulses[i]) = nodes[i].trigger();
-			//std::get<0>(pulses[i]) = nodes[i].pulse(nodes[i].trigger());
-		process_pulses(pulses);
 	}
+	process_pulses(pulses);
 	return pulses;
 }
 
-void MorassNetwork::process_pulses(std::vector<std::tuple<double, int>> pulses) {
+void MorassNetwork::process_pulses(const std::vector<std::tuple<double, int>>& pulses) {
 	for (unsigned int i = 0; i < nodes.size(); i++) {
+		if (std::get<0>(pulses[i]) == 0.0)
+			continue;
 		for (unsigned int n = 0; n < nodes[i].edges.size(); n++) {
 			// get<0>: out_pcnt, get<1>: out_fixed, get<2>: node
 			// Multiply the outgoing signal by out_pcnt and add out_fixed
@@ -141,7 +137,11 @@ void MorassNetwork::process_pulses(std::vector<std::tuple<double, int>> pulses) 
 	}
 }
 
-Node MorassNetwork::get_node(int node_id) {
+Node& MorassNetwork::get_node(unsigned int node_id) {
+	return nodes[node_id];
+}
+
+const Node& MorassNetwork::get_node(unsigned int node_id) const {
 	return nodes[node_id];
 }
 

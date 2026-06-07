@@ -3,7 +3,7 @@
 //int Node::counter = 0;
 
 Node::Node(void) {
-	id = NULL;
+	id = 0;
 	num_edges = 0;
 	current_chg = stored_chg = threshold = 
 		chg_cons_pcnt = chg_cons_fixed = 
@@ -31,7 +31,7 @@ bool Node::operator==(Node other) {
 }
 
 void Node::shift_id_down(int start_idx) {
-	for (int i = 0; i < edges.size(); i++) {
+	for (size_t i = 0; i < edges.size(); i++) {
 		auto prev = std::get<2>(edges[i]);
 		if (std::get<2>(edges[i]) > start_idx) {
 			std::get<2>(edges[i]) -= 1;
@@ -55,7 +55,7 @@ bool Node::add_edge(double out_pcnt, double out_fixed, int node) {
 
 bool Node::del_edge(Node to_del) {
 	for (unsigned int i = 0; i < edges.size(); i++) {
-		if (std::get<2>(edges[i]) == to_del.get_id()) {
+		if (std::get<2>(edges[i]) == static_cast<int>(to_del.get_id())) {
 			edges.erase(edges.begin() + i);
 			num_edges--;
 			return true;
@@ -77,7 +77,7 @@ bool Node::del_edge(int to_del) {
 
 bool Node::has_edge(Node to_find) {
 	for (unsigned int i = 0; i < edges.size(); i++) {
-		if (std::get<2>(edges[i]) == to_find.get_id()) {
+		if (std::get<2>(edges[i]) == static_cast<int>(to_find.get_id())) {
 			return true;
 		}
 	}

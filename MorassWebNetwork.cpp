@@ -2,15 +2,18 @@
 //
 
 #include <iostream>
+#include <cstdlib>
 using namespace std;
 #include "geneticalgorithm.h"
 #include "morassnetwork.h"
 
-int main()
+int main(int argc, char* argv[])
 {
+    unsigned int webs_to_make = argc > 1 ? std::strtoul(argv[1], nullptr, 10) : 100;
+    unsigned int epochs = argc > 2 ? std::strtoul(argv[2], nullptr, 10) : 1000;
     GeneticAlgorithm* ga = new GeneticAlgorithm(0, 10, .5);
     //MorassNetwork* mn = ga->evolve_for_pi(10);
-    ga->evolve_for_pi(1000);
+    ga->evolve_for_pi(webs_to_make, epochs);
     //ga->evolve_for_mnist(1000);
     //MorassNetwork* mn = new MorassNetwork();
     /*std::vector<std::tuple<double, int>> pulses;

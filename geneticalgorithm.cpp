@@ -1,27 +1,24 @@
 #include "geneticalgorithm.h"
-#include "omp.h"
 
 
 
-GeneticAlgorithm::GeneticAlgorithm() {
+GeneticAlgorithm::GeneticAlgorithm() : gen(rd()) {
+	std::srand(rd());
 	parent_ratio = .5;
 	num_inputs = 0;
 	num_outputs = 1;
 	max_threshold = 1000.0;
-	//std::random_device rd;  //Will be used to obtain a seed for the random number engine
-	std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
 	//std::uniform_real_distribution<> dis(-1.0, 1.0);
 	//dis.param( = -1;
 	//gen.seed(rd());
 }
 
-GeneticAlgorithm::GeneticAlgorithm(int inputs, int outputs, double merge_ratio, double max_T) {
+GeneticAlgorithm::GeneticAlgorithm(int inputs, int outputs, double merge_ratio, double max_T) : gen(rd()) {
+	std::srand(rd());
 	parent_ratio = merge_ratio;
 	num_inputs = inputs;
 	num_outputs = outputs;
 	max_threshold = max_T;
-	//std::random_device rd;  //Will be used to obtain a seed for the random number engine
-	std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
 	//std::uniform_real_distribution<> dis(-1.0, 1.0);
 	//gen.seed(rd());
 }
@@ -115,13 +112,14 @@ bool GeneticAlgorithm::add_random_edge(MorassNetwork &web, int start, int end, i
 	if (web.length() < 2)
 		return false;
 	int num_neurons = web.length();
-	int start_n = start, end_n = end;
 	double out_pcnt, out_fixed;
 	bool success = false;
 	//std::random_device rd;  //Will be used to obtain a seed for the random number engine
 	//std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
 	std::uniform_real_distribution<> dis(-1.0, 1.0);
 	for (int i = 0; i < max_attempts && !success; i++) {
+		int start_n = start;
+		int end_n = end;
 		if (start_n == -1)
 			do {
 				start_n = rand() % (num_neurons);
@@ -184,8 +182,7 @@ void GeneticAlgorithm::add_random_node_with_edges(MorassNetwork &web, unsigned i
 		for (unsigned int i = 0; i < inc_edges; i++) {
 			out_pcnt = dis(gen);
 			out_fixed = dis(gen) * max_threshold;
-			//std::cout << "add_random_node_with_edges -> node_id: " << node_id << " i: " << i << std::endl;
-			web.add_edge(out_pcnt, out_fixed, node_id, i);
+			web.add_edge(out_pcnt, out_fixed, i, node_id);
 		}
 	}
 	else {
@@ -194,7 +191,7 @@ void GeneticAlgorithm::add_random_node_with_edges(MorassNetwork &web, unsigned i
 				out_pcnt = dis(gen);
 				out_fixed = dis(gen) * max_threshold;
 				rand_val = rand() % (web.length());
-			} while (!web.add_edge(out_pcnt, out_fixed, rand_val, node_id));
+			} while (rand_val == node_id || !web.add_edge(out_pcnt, out_fixed, rand_val, node_id));
 		}
 	}
 	if (out_edges == web.length()-1) {
@@ -210,12 +207,14 @@ void GeneticAlgorithm::add_random_node_with_edges(MorassNetwork &web, unsigned i
 				out_pcnt = dis(gen);
 				out_fixed = dis(gen) * max_threshold;
 				rand_val = rand() % (web.length());
-			} while (!web.add_edge(out_pcnt, out_fixed, node_id, rand_val));
+			} while (rand_val == node_id || !web.add_edge(out_pcnt, out_fixed, node_id, rand_val));
 		}
 	}
 }
 
 bool GeneticAlgorithm::del_random_node(MorassNetwork &web) {
+	if (web.length() == 0)
+		return false;
 	return web.del_node(rand() % (web.length()));
 }
 
@@ -223,7 +222,7 @@ void GeneticAlgorithm::randomise_edge(MorassNetwork &web) {
 	//std::random_device rd;  //Will be used to obtain a seed for the random number engine
 	//std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
 	std::uniform_real_distribution<> dis(-1.0, 1.0);
-	Node temp_node = web.get_node(rand() % (web.length()));
+	Node& temp_node = web.get_node(rand() % (web.length()));
 	if (temp_node.get_num_edges() == 1)
 		temp_node.set_edge(dis(gen), dis(gen) * max_threshold, 0);
 	else if (temp_node.get_num_edges() > 0)
@@ -240,8 +239,8 @@ void GeneticAlgorithm::randomise_node(MorassNetwork &web) {
 	Cf = dis(gen) * T;
 	Dp = dis(gen);
 	Df = dis(gen) * T;
-	Node temp_node_ptr = web.get_node(rand() % (web.length()));
-	temp_node_ptr.set_node(T, Cp, Cf, Dp, Df);
+	Node& temp_node = web.get_node(rand() % (web.length()));
+	temp_node.set_node(T, Cp, Cf, Dp, Df);
 }
 
 void GeneticAlgorithm::mutate_web(MorassNetwork &web, bool allow_node_deletion) {
@@ -345,7 +344,7 @@ MorassNetwork GeneticAlgorithm::merge_webs(MorassNetwork web_a, MorassNetwork we
 MorassNetwork GeneticAlgorithm::deep_copy(MorassNetwork web) {
 	MorassNetwork new_web = MorassNetwork();
 	Node curr_node;
-	for (int i = 0; i < web.length(); i++) {
+	for (unsigned int i = 0; i < web.length(); i++) {
 		curr_node = web.get_node(i);
 		new_web.add_node(curr_node.get_threshold(),
 			curr_node.get_chg_cons_pcnt(),
@@ -363,13 +362,13 @@ MorassNetwork GeneticAlgorithm::deep_copy(MorassNetwork web) {
 	return new_web;
 }
 
-MorassNetwork GeneticAlgorithm::evolve_for_pi(unsigned int webs_to_make) {
+MorassNetwork GeneticAlgorithm::evolve_for_pi(unsigned int webs_to_make, unsigned int num_epochs) {
 	//std::random_device rd;  //Will be used to obtain a seed for the random number engine
 	//std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
 	std::uniform_real_distribution<> dis(-1.0, 1.0);
+	webs_to_make = std::max(1u, webs_to_make);
 	generate_webs(webs_to_make, 20, false);	// (num_webs, num_nodes, is_fully_connected)
-	int top_to_keep = std::min(20, (int)std::sqrt(webs_to_make)); // WARNING: do not make this number too large
-	unsigned int num_epochs = 100000;
+	int top_to_keep = std::max(1, std::min(20, (int)std::sqrt(webs_to_make))); // WARNING: do not make this number too large
 	unsigned int num_steps = 30;
 	unsigned int max_mutations = 30;
 	unsigned int num_outputs = 10;
@@ -404,10 +403,9 @@ MorassNetwork GeneticAlgorithm::evolve_for_pi(unsigned int webs_to_make) {
 		bool multi_output_allowed = false;
 		int webs_size = webs.size();
 
-		#pragma omp parallel for schedule(dynamic)
 		for (int k = 0; k < webs_size; k++) {
 			std::vector<std::tuple<double, int>> pulses;
-			for (int j = 0; j < num_steps; j++) {
+			for (unsigned int j = 0; j < num_steps; j++) {
 				//std::cout << "Web#: " << k << " Step#: " << j << std::endl;
 				bool multi_output;
 				pulses = webs[k].step();
@@ -437,19 +435,32 @@ MorassNetwork GeneticAlgorithm::evolve_for_pi(unsigned int webs_to_make) {
 			}
 		}
 		// This loop compares the output of the network against pi to calculate accuracy
-		#pragma omp parallel for schedule(dynamic)
-		for (int j = 0; j < pi.size(); j++) {
+		for (size_t j = 0; j < pi.size(); j++) {
+			const int position_weight = static_cast<int>(std::max<size_t>(1, num_steps - std::min<size_t>(j, num_steps - 1)));
+			const int weighted_score = position_weight * position_weight;
 			for (unsigned int k = 0; k < outputs.size(); k++) {
-				if (j < outputs[k].size())
+				if (j < outputs[k].size()) {
 					if (outputs[k][j] == pi[j]) {
-						//std::cout << "Adding: " << std::max((200 - (signed)webs[std::get<1>(scores[k])].length()) / ((int)j + 1), 50) << std::endl;
-						std::get<0>(scores[k])+= std::max((200 - (signed)webs[std::get<1>(scores[k])].length()*5) / ((int)j+1), 50 - std::min(40, (signed)webs[std::get<1>(scores[k])].length()));
+						const int size_penalty = std::min(40, static_cast<int>(webs[std::get<1>(scores[k])].length()));
+						std::get<0>(scores[k]) += weighted_score - size_penalty;
 					}
 					else {
-						//std::cout << "Removing: " << (int)(5. * (double)std::abs((outputs[k][j] - '0') - (pi[j] - '0'))) << std::endl;
-						std::get<0>(scores[k]) -= (int)(5. * (double)std::abs((outputs[k][j] - '0') - (pi[j] - '0')));
+						const int digit_distance = std::abs((outputs[k][j] - '0') - (pi[j] - '0'));
+						std::get<0>(scores[k]) -= weighted_score * std::max(1, digit_distance);
 					}
+				}
 			}
+		}
+		for (unsigned int k = 0; k < outputs.size(); k++) {
+			size_t prefix_matches = 0;
+			while (prefix_matches < outputs[k].size() &&
+				prefix_matches < pi.size() &&
+				outputs[k][prefix_matches] == pi[prefix_matches]) {
+				prefix_matches++;
+			}
+			std::get<0>(scores[k]) += static_cast<int>(prefix_matches * prefix_matches * 100);
+			if (!outputs[k].empty() && outputs[k][0] != pi[0])
+				std::get<0>(scores[k]) -= 100;
 		}
 		std::sort(scores.begin(), scores.end());
 		best_web = -1;
@@ -480,14 +491,14 @@ MorassNetwork GeneticAlgorithm::evolve_for_pi(unsigned int webs_to_make) {
 		webs.clear();
 		if (i == num_epochs - 1)
 			break;
-		for (int j = 0; j < best_webs.size(); j++) {
+		for (size_t j = 0; j < best_webs.size(); j++) {
 			webs.push_back(best_webs[j]);
 			for (unsigned int k = j; k < best_webs.size(); k++) {
-				if (j != k)
+				if (j != static_cast<size_t>(k))
 					webs.push_back(merge_webs(best_webs[j], best_webs[k]));
 			}
 		}
-		for (int i = webs.size(); i < webs_to_make - int(webs_to_make * 0.1); i++) {
+		for (unsigned int i = webs.size(); i < webs_to_make - int(webs_to_make * 0.1); i++) {
 			MorassNetwork temp_web;
 			temp_web = deep_copy(best_webs[webs.size() % best_webs.size()]);
 			for (unsigned int j = 0; j < rand() % (max_mutations - 1) + 1; j++)
